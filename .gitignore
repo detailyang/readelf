@@ -1,4 +1,3 @@
-
 # Created by https://www.gitignore.io/api/python
 
 ### Python ###
@@ -81,12 +80,6 @@ celerybeat-schedule
 
 # dotenv
 .env
-
-# virtualenv
-.venv/
-venv/
-ENV/
-env
 
 # Spyder project settings
 .spyderproject
