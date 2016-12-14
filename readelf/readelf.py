@@ -15,6 +15,94 @@ SHF_EXECINSTR = 0x4
 SHF_MASKPROC = 0xF0000000
 
 
+TAG = {
+	0:"NULL",
+	1:"NEEDED",
+	2:"PLTRELSZ",
+	3:"PLTGOT",
+	4:"HASH",
+	5:"STRTAB",
+	6:"SYMTAB",
+	7:"RELA",
+	8:"RELASZ",
+	9:"RELAENT",
+	10:"STRSZ",
+	11:"SYMENT",
+	12:"INIT",
+	13:"FINI",
+	14:"SONAME",
+	15:"RPATH",
+	16:"SYMBOLIC",
+	17:"REL",
+	18:"RELSZ",
+	19:"RELENT",
+	20:"PLTREL",
+	21:"DEBUG",
+	22:"TEXTREL",
+	23:"JMPREL",
+	24:"BIND_NOW",
+	25:"INIT_ARRAY",
+	26:"FINI_ARRAY",
+	27:"INIT_ARRAYSZ",
+	28:"FINI_ARRAYSZ",
+	29:"RUNPATH",
+	30:"FLAGS",
+	32:"ENCODING",
+	32:"PREINIT_ARRAY",
+	33:"PREINIT_ARRAYSZ",
+	34:"MAXPOSTAGS",
+	0x6000000d:"LOOS",
+	0x6000000d:"SUNW_AUXILIARY",
+	0x6000000e:"SUNW_RTLDINF",
+	0x6000000e:"SUNW_FILTER",
+	0x60000010:"SUNW_CAP",
+	0x60000011:"SUNW_SYMTAB",
+	0x60000012:"SUNW_SYMSZ",
+	0x60000013:"SUNW_ENCODING",
+	0x60000013:"SUNW_SORTENT",
+	0x60000014:"SUNW_SYMSORT",
+	0x60000015:"SUNW_SYMSORTSZ",
+	0x60000016:"SUNW_TLSSORT",
+	0x60000017:"SUNW_TLSSORTSZ",
+	0x60000018:"SUNW_CAPINFO",
+	0x60000019:"SUNW_STRPAD",
+	0x6000001a:"SUNW_CAPCHAIN",
+	0x6000001b:"SUNW_LDMACH",
+	0x6000001d:"SUNW_CAPCHAINENT",
+	0x6000001f:"SUNW_CAPCHAINSZ",
+	0x6ffff000:"HIOS",
+	0x6ffffd00:"VALRNGLO",
+	0x6ffffdf8:"CHECKSUM",
+	0x6ffffdf9:"PLTPADSZ",
+	0x6ffffdfa:"MOVEENT",
+	0x6ffffdfb:"MOVESZ",
+	0x6ffffdfd:"POSFLAG_1",
+	0x6ffffdfe:"SYMINSZ",
+	0x6ffffdff:"SYMINENT",
+	0x6ffffdff:"VALRNGHI",
+	0x6ffffe00:"ADDRRNGLO",
+	0x6ffffefa:"CONFIG",
+	0x6ffffefb:"DEPAUDIT",
+	0x6ffffefc:"AUDIT",
+	0x6ffffefd:"PLTPAD",
+	0x6ffffefe:"MOVETAB",
+	0x6ffffeff:"SYMINFO",
+	0x6ffffeff:"ADDRRNGHI",
+	0x6ffffff9:"RELACOUNT",
+	0x6ffffffa:"RELCOUNT",
+	0x6ffffffb:"FLAGS_1",
+	0x6ffffffc:"VERDEF",
+	0x6ffffffd:"VERDEFNUM",
+	0x6ffffffe:"VERNEED",
+	0x6fffffff:"VERNEEDNUM",
+	0x70000000:"LOPROC",
+	0x70000001:"SPARC_REGISTER",
+	0x7ffffffd:"AUXILIARY",
+	0x7ffffffe:"USED",
+	0x7fffffff:"FILTER",
+	0x7fffffff:"HIPROC",
+}
+
 PT_FLAGS = {
 	0: "None",
 	1: "E",
@@ -451,6 +539,7 @@ def readelf(elf):
 	e_shstrndx = -1
 	e_shdynsym = -1
 	e_shdynstr = -1
+	e_shdynamic = -1
 
 	print("")
 	print("Section Headers:")
@@ -487,10 +576,14 @@ def readelf(elf):
 
 			if string_table[sh_name] == '.dynstr':
 				e_shdynstr = i
+			
+			if string_table[sh_name] == '.dynamic':
+				e_shdynamic = i
 
 		else:
 			print("[%02d]%20s%15s%10x%10d%8d%8d%5s%5s%5s%6s" % (i, sh_name, SH_TYPE[sh_type] if sh_type in SH_TYPE else sh_type, sh_addr, sh_offset, sh_size, sh_entsize, f, sh_link, sh_info, sh_addralign))
-
+		
+		
 	if e_shdynsym >= 0 and e_shdynstr >= 0:
 		elf.seek(e_shoff + e_shentsize * e_shdynstr)
 		if ei_class == 1:
@@ -547,8 +640,8 @@ def readelf(elf):
 
 		elf.seek(sh_offset)
 		sym_section = elf.read(sh_size)
-		symbol_table = {}
 		lastnull = 0
+		symbol_table = {}
 		for i, s in enumerate(sym_section):
 			if s == '\0':
 				symbol_table[lastnull] = sym_section[lastnull:i]
@@ -583,6 +676,38 @@ def readelf(elf):
 			else:
 				print("%04d%10d%10d%10s%10s%10s%10d%30d" %(i, st_value, st_size, STT_TYPE[ELF_ST_TYPE(st_info)],
 					STB_BIND[ELF_ST_BIND(st_info)], STV_VISIBILITY[ELF_ST_VISIBILITY(st_other)], st_shndx, st_name,))
+
+	if e_shdynamic >= 0:
+		elf.seek(e_shoff + e_shentsize * e_shdynamic)
+		if ei_class == 1:
+			sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link, sh_info, sh_addralign, sh_entsize  = struct.unpack('IIIHHIIIII', elf.read(48))
+		else:
+			sh_name, sh_type, sh_flags, sh_addr, sh_offset,  sh_size, sh_link, sh_info, sh_addralign, sh_entsize  = struct.unpack('IIQQQQIIQQ', elf.read(64))
+
+		elf.seek(sh_offset)
+		dynamic_section = elf.read(sh_size)	
+		print('')
+		print('Dynamic section:')
+		print('%20s %20s %20s' %("Tag", "Type", "Name/Value"))
+		if ei_class == 1:
+			pass
+		else:
+			for i in range(0, sh_size/16):
+				elf.seek(sh_offset + i * 16)		
+				d_tag, d_un = struct.unpack('QQ', elf.read(16))
+				if d_tag in TAG:
+					if d_tag == 1 or d_tag == 15:
+						print('0x%018x %20s %20s' %(d_tag, TAG[d_tag], dynsymbol_table[d_un]))
+					else:
+						print('0x%018x %20s %20s' %(d_tag, TAG[d_tag], d_un))
+				else:
+					if d_tag == 1 or d_tag == 15:
+						print('0x%018x %20s %20s' %(d_tag, d_tag, dynsymbol_table[d_un]))
+					else:
+						print('0x%018x %20s %20s' %(d_tag, d_tag, d_un))
+		
+	return
+
 
 
 
