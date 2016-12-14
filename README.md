@@ -12,7 +12,6 @@ It's used to learning [ELF] whcich is writed on One Python File.
 
 TODO
 =======
-* Program Header
 * Relocatable File
 
 
