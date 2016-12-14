@@ -14,6 +14,31 @@ SHF_ALLOC = 0x2
 SHF_EXECINSTR = 0x4
 SHF_MASKPROC = 0xF0000000
 
+
+PT_FLAGS = {
+	0: "None",
+	1: "E",
+	2: "W",
+	3: "WE",
+	4: "R",
+	5: "RE",
+	6: "RW",
+	7: "RWE"
+}
+
+PT_TYPE = {
+	0: "NULL",
+	1: "LOAD",
+	2: "DYNAMIC",
+	3: "INTERP",
+	4: "NOTE",
+	5: "SHLIB",
+	6: "PHDR",
+	7: "TLS",
+	0x70000000: "LOPROC",
+	0x7fffffff: "HPROC"
+}
+
 STT_TYPE = {
 	0: 'NOTYPE',
 	1: 'OBJECT',
@@ -387,12 +412,47 @@ def readelf(elf):
 		if s == '\0':
 			string_table[lastnull] = str_section[lastnull:i]
 			lastnull = i + 1
+	print("")
+	print("Program Headers:")
+	print("%10s 0x%10s 0x%14s 0x%14s 0x%10s 0x%10s %010s" %("Type", "Offset", "VirtAddr", "PhysAddr", "FileSiz", "MemSiz", "Flags"))
+
+	
+	e_shinterpndx = -1
+	for i in range(0, e_phnum):
+		elf.seek(e_phoff + e_phentsize * i)
+
+
+		if ei_class == 1:
+			p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags, p_align = strcut.unpack('IIIIIIII', elf.read(32))
+		else:
+			p_type, p_flags, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_align = struct.unpack('IIQQQQQQ', elf.read(56))
+
+
+		#INTERP
+		if p_type == 3:
+			e_shinterpndx = i
+			
+
+		print("%10s 0x%08x 0x%014x 0x%014x 0x%010x 0x%010x %010s" %( PT_TYPE[p_type] if p_type in PT_TYPE else p_type,p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, PT_FLAGS[p_flags]))
+
+	if e_shinterpndx >= 0:
+		elf.seek(e_phoff + e_phentsize * e_shinterpndx)
+		if ei_class == 1:
+			p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags, p_align = strcut.unpack('IIIIIIII', elf.read(32))
+		else:
+			p_type, p_flags, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_align = struct.unpack('IIQQQQQQ', elf.read(56))
+		elf.seek(p_offset)
+		interp = elf.read(p_filesz)
+		print("")
+		print("Interp:")
+		print(interp)
 
 	e_shsymndx = -1
 	e_shstrndx = -1
 	e_shdynsym = -1
 	e_shdynstr = -1
 
+	print("")
 	print("Section Headers:")
 	print("[NR] %20s%10s%15s%10s%8s%8s%5s%5s%5s%6s" % ("Name", "Type", "Address", "Offset", "Size", "EntSize", "Flag", "Link", "Info", "Align"))
 	for i in range(0, e_shnum):
