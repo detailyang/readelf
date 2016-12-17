@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 #-*-coding: utf-8 -*-
 
 import sys
@@ -8,6 +7,7 @@ import struct
 
 class ELFError(Exception):
 	pass
+
 
 SHF_WRITE = 0x1
 SHF_ALLOC = 0x2
@@ -103,6 +103,7 @@ TAG = {
 	0x7fffffff:"HIPROC",
 }
 
+
 PT_FLAGS = {
 	0: "None",
 	1: "E",
@@ -113,6 +114,7 @@ PT_FLAGS = {
 	6: "RW",
 	7: "RWE"
 }
+
 
 PT_TYPE = {
 	0: "NULL",
@@ -126,6 +128,7 @@ PT_TYPE = {
 	0x70000000: "LOPROC",
 	0x7fffffff: "HPROC"
 }
+
 
 STT_TYPE = {
 	0: 'NOTYPE',
@@ -141,6 +144,7 @@ STT_TYPE = {
 	15: 'HIPROC'
 }
 
+
 STB_BIND = {
 	0: 'LOCAL',
 	1: 'GLOBAL',
@@ -149,12 +153,14 @@ STB_BIND = {
 	15: 'HIPROC'
 }
 
+
 STV_VISIBILITY = {
 	0: 'DEFAULT',
 	1: 'INTERNAL',
 	2: 'HIDDEN',
 	3: 'PROTECTED'
 }
+
 
 SH_TYPE = {
 	0:"NULL",
@@ -181,6 +187,7 @@ SH_TYPE = {
 	0x80000000:"LOUSER",
 	0xffffffff:"HIUSER",
 }
+
 
 EI_MACHINE = {
 	0:"No machine",
@@ -377,17 +384,22 @@ EI_MACHINE = {
 	243:"RISC-V",
 }
 
+
 def ELF_ST_BIND(i):
 	return ((i) >> 4)
+
 
 def ELF_ST_TYPE(i):
 	return ((i)&0x0f)
 
+
 def ELF_ST_INFO(b, t):
 	return ((b)<<4 + ((t)&0x0f))
 
+
 def ELF_ST_VISIBILITY(i):
 	return ((i)&0x3)
+
 
 def readelf(elf):
 	'''
@@ -707,8 +719,6 @@ def readelf(elf):
 						print('0x%018x %20s %20s' %(d_tag, d_tag, d_un))
 		
 	return
-
-
 
 
 if __name__ == '__main__':
